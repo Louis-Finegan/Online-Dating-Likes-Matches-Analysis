@@ -42,6 +42,15 @@ correlations for opens/recorded day, likes/recorded day and matches/recorded day
 proxy for activity; this does **not** measure minutes or establish that longer
 usage causes more matches. Reverse causation is plausible.
 
+Repeat the same three Spearman comparisons within each recorded gender and
+report pairwise sample size, rho and two-sided p-value in
+`correlations_by_gender.json` and `FINDINGS.md`. The pooled `correlations.json`
+remains unchanged. P-values use the asymptotic approximation and are unadjusted
+for multiple testing; smaller-group p-values deserve particular caution.
+A smaller sample does not automatically imply statistical nonsignificance.
+Differences in coefficients or p-values are not a formal test of differences
+between genders. Shared denominators and other confounding remain after stratification.
+
 **H4 (distribution):** Characterise inequality using Gini on total match counts,
 Lorenz curves and the share of matches held by the top 10% of observed users.
 These quantify outcomes, not actual profile impressions or desirability.

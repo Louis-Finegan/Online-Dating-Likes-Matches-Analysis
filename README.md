@@ -13,6 +13,8 @@ SwipeStats exports. This repository uses that dataset exclusively.
 
 The analysis retains descriptive summaries, participant bootstrap intervals,
 Spearman correlations, three negative-binomial models, and Lorenz/Gini measures.
+Correlations are reported both pooled and separately by recorded gender, with
+sample sizes and exploratory p-values, in the JSON outputs and findings report.
 See [research design and equations](docs/RESEARCH_DESIGN.md) and the
 [data dictionary](docs/DATA_DICTIONARY.md).
 

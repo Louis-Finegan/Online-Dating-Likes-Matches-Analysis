@@ -10,7 +10,8 @@ def _fmt(x, places=3):
     return f'{x:,.{places}f}'
 
 
-def write_report(out: str | Path, audit, totals, groups, bootstrap, correlations, models):
+def write_report(out: str | Path, audit, totals, groups, bootstrap, correlations, models,
+                 gender_correlations=None):
     out = Path(out)
     source = (out / 'dataset_manifest.json')
     manifest = json.loads(source.read_text()) if source.exists() else {}
@@ -56,7 +57,22 @@ def write_report(out: str | Path, audit, totals, groups, bootstrap, correlations
         '|---|---|---:|---:|---:|',
     ]
     for r in correlations:
-        lines.append(f'| {r["variable_x"]} | {r["variable_y"]} | {r["n"]} | {_fmt(r["rho"])} | {_fmt(r["p_value"],4)} |')
+        p = 'Not estimated' if r['p_value'] is None else f'{r["p_value"]:.3g}'
+        lines.append(f'| {r["variable_x"]} | {r["variable_y"]} | {r["n"]} | {_fmt(r["rho"])} | {p} |')
+    if gender_correlations is not None:
+        lines += ['', '### Correlations within recorded gender', '',
+                  '| Gender | Variable X | Variable Y | N | Spearman rho | Exploratory p-value |',
+                  '|---|---|---|---:|---:|---:|']
+        for r in gender_correlations:
+            p = 'Not estimated' if r['p_value'] is None else f'{r["p_value"]:.3g}'
+            lines.append(f'| {r["gender"]} | {r["variable_x"]} | {r["variable_y"]} | {r["n"]} | {_fmt(r["rho"])} | {p} |')
+        lines += ['', 'These are within-group associations between recorded-day rates.',
+                  'A smaller group does not automatically imply a nonsignificant result.',
+                  'P-values use the asymptotic Spearman approximation and are unadjusted for',
+                  'multiple comparisons; interpret them cautiously, especially in smaller groups.',
+                  'Different coefficients or significance levels do not establish a between-group difference.',
+                  'All rates share a recorded-day denominator. Stratification does not remove',
+                  'that dependence, self-selection, other confounding or reverse causation.', '']
     lines += ['', '## Exploratory count regression', '',
               'See `models.csv` and `model_diagnostics.json` for estimated NB coefficients,',
               'incidence-rate ratios, convergence and diagnostics. Do not interpret',

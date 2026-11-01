@@ -30,6 +30,11 @@ def test_entire_analysis_on_synthetic_data(tmp_path):
     assert (output/'figures'/'05_lorenz_match_counts.pdf').exists()
     audit = json.loads((output/'audit.json').read_text())
     assert audit['usable_rows'] == 130
+    gender_correlations = json.loads((output/'correlations_by_gender.json').read_text())
+    assert len(gender_correlations) == 6
+    assert {r['gender'] for r in gender_correlations} == {'Male', 'Female'}
+    assert all(r['n'] == 65 for r in gender_correlations)
+    assert '### Correlations within recorded gender' in (output/'FINDINGS.md').read_text()
     manifest = json.loads((output/'dataset_manifest.json').read_text())
     assert manifest['sha256'] == hashlib.sha256(data.read_bytes()).hexdigest()
     assert manifest['original_rows'] == 130

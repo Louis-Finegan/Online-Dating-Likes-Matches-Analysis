@@ -12,6 +12,7 @@ Run `python -m scripts.run_study` from the repository root. Generated files in
 | `gender_summary.csv` | Descriptive summaries by recorded gender |
 | `bootstrap_ci.json` | Female/Male pooled matches-per-recorded-day ratio and interval |
 | `correlations.json` | Three Spearman rate associations |
+| `correlations_by_gender.json` | The same three associations within each recorded gender, with pairwise N, rho and p-value |
 | `models.csv` | Negative-binomial coefficients and rate ratios |
 | `model_diagnostics.json` | Model status, formula, sample size and fit diagnostics |
 | `figures/` | Five plots, each in PNG and PDF format |

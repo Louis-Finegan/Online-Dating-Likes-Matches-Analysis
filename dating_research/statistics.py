@@ -122,3 +122,12 @@ def spearman_associations(df: pd.DataFrame) -> list[dict]:
         results.append({'variable_x': a, 'variable_y': b, 'n': len(x),
                         'rho': float(out.statistic), 'p_value': float(out.pvalue)})
     return results
+
+
+def spearman_by_gender(df: pd.DataFrame) -> list[dict]:
+    """Repeat the same three pairwise checks within each recorded gender."""
+    return [
+        {'gender': str(gender), **result}
+        for gender, group in df.groupby('gender', observed=True, sort=True)
+        for result in spearman_associations(group)
+    ]

@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 from dating_research.source import load_tinder
 from dating_research.dataset import DEFAULT_INPUT, DEFAULT_OUTPUT, SOURCE_URL, URL
 from dating_research.statistics import (group_summary, overall_summary,
-                                         bootstrap_rate_ratio, spearman_associations)
+                                         bootstrap_rate_ratio, spearman_associations, spearman_by_gender)
 from dating_research.models import fit_models
 from dating_research.figures import make_figures
 from dating_research.report import write_report
@@ -38,6 +38,7 @@ def main(argv=None):
     total = overall_summary(data)
     uncertainty = bootstrap_rate_ratio(data, draws=args.bootstrap, seed=args.seed)
     correlation = spearman_associations(data)
+    gender_correlations = spearman_by_gender(data)
     coefficients, diagnostics = fit_models(data)
     summary.to_csv(output / 'gender_summary.csv', index=False)
     coefficients.to_csv(output / 'models.csv', index=False)
@@ -45,6 +46,7 @@ def main(argv=None):
     save_json(output / 'overall.json', total)
     save_json(output / 'bootstrap_ci.json', uncertainty)
     save_json(output / 'correlations.json', correlation)
+    save_json(output / 'correlations_by_gender.json', gender_correlations)
     save_json(output / 'model_diagnostics.json', diagnostics)
     save_json(output / 'dataset_manifest.json', {
         'source': 'Ashley Xu / SwipeStats publicly shared Tinder dataset',
@@ -58,7 +60,8 @@ def main(argv=None):
         'seed': args.seed,
     })
     figs = make_figures(data, output / 'figures')
-    write_report(output, audit, total, summary, uncertainty, correlation, diagnostics)
+    write_report(output, audit, total, summary, uncertainty, correlation, diagnostics,
+                 gender_correlations=gender_correlations)
     print(f'Analysed {len(data):,} records. Figures: {len(figs)}.')
     print(summary[['gender', 'users', 'likes_sent_median', 'matches_median',
                    'pooled_matches_per_recorded_day']].to_string(index=False))
