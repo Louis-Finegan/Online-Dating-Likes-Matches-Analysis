@@ -2,7 +2,7 @@
 
 ## Working title
 
-**Likes, Matches and Dating-App Activity: Exploratory Evidence From User-Contributed Tinder Records**
+**Tinder: Likes, Matches and App Activity**
 
 ## Study population
 
@@ -12,7 +12,11 @@ The author reports use-permission for a subset; verify the original license
 before redistributing any part of the data or publishing individual observations.
 
 Raw CSVs can include sensitive profile fields. Our loader only reads the
-analysis columns listed in the data dictionary. Figures are aggregate-only.
+analysis columns listed in the data dictionary. Scatter plots show individual
+count/rate observations; other plots summarise distributions. See the
+[verified source counts and checksum](DATA_PROVENANCE.md): 1,209 rows before
+cleaning, with 1,059 M-coded and 150 F-coded users. This gender imbalance limits
+precision and comparisons; resampling does not remove selection bias.
 
 ## Hypotheses / estimands
 
@@ -34,7 +38,7 @@ may face very different dating pools, orientation distributions and paywall
 constraints. The dataset does not provide enough context to identify why.
 
 **H3 (activity):** Is app-open frequency associated with matches? Examine rank
-correlations for opens/day, likes/day and matches/day. App opens are an imperfect
+correlations for opens/recorded day, likes/recorded day and matches/recorded day. App opens are an imperfect
 proxy for activity; this does **not** measure minutes or establish that longer
 usage causes more matches. Reverse causation is plausible.
 
@@ -51,7 +55,9 @@ For participant i with M_i matches and D_i recorded app-open dates, fit
              + beta_L log(1 + LikesSent_i / D_i)
              + beta_A log(1 + AppOpens_i / D_i).
 
-A third specification adds `Gender_i * log(1 + AppOpens_i / D_i)`.
+The first specification uses gender alone; the second is shown above.
+A third specification adds the gender-by-log-opens-rate interaction to the second.
+Age and partner preference are not included in these models.
 The model uses an **offset** of `log(D_i)` to approximate exposure, but `D_i` is
 not calendar tenure: it is the count of dates with recorded app-open data.
 As both numerator and denominator come from related activity histories, this
@@ -78,12 +84,10 @@ correlations; treat reported p-values as descriptive diagnostics.
 - The dataset has no exposure/impression counts to distinguish preference from visibility.
 - The cross-section includes no information about relationship formation quality.
 
-## Hypergamy gateway
+## Interpretation boundary
 
-We can examine *match-count inequality*, not whether users choose higher-status
-partners. A future hypergamy test needs participant-pair level choices and
-comparable education, income, occupation or explicitly defined relative status.
-High Gini coefficients alone would **not** establish hypergamy.
+Match-count inequality cannot establish partner-status preferences, desirability
+or relationship quality. Those outcomes are outside this dataset's scope.
 
 ## Figures and tables
 
@@ -100,4 +104,5 @@ High Gini coefficients alone would **not** establish hypergamy.
 - Raw dataset: https://github.com/Ashley-Xu/AIPIFinalDataset/blob/main/Tinder_Data_v3_Clean_Edition.csv
 - SwipeStats research context: https://www.swipestats.io/research
 
-The project makes no claim to a Hinge-specific or representative sample.
+The project uses this Tinder CSV exclusively and makes no claim to a
+representative sample. Full source verification is in [DATA_PROVENANCE.md](DATA_PROVENANCE.md).

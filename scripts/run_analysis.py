@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from dating_research.source import load_tinder
+from dating_research.dataset import DEFAULT_INPUT, DEFAULT_OUTPUT, SOURCE_URL, URL
 from dating_research.statistics import (group_summary, overall_summary,
                                          bootstrap_rate_ratio, spearman_associations)
 from dating_research.models import fit_models
@@ -25,8 +26,8 @@ def save_json(path: Path, value):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Analyse observed Tinder likes, matches and app opens')
-    parser.add_argument('--input', type=Path, default=ROOT / 'data' / 'Tinder_Data_v3_Clean_Edition.csv')
-    parser.add_argument('--output', type=Path, default=ROOT / 'results' / 'tinder')
+    parser.add_argument('--input', type=Path, default=DEFAULT_INPUT)
+    parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument('--bootstrap', type=int, default=2000)
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args(argv)
@@ -47,10 +48,14 @@ def main(argv=None):
     save_json(output / 'model_diagnostics.json', diagnostics)
     save_json(output / 'dataset_manifest.json', {
         'source': 'Ashley Xu / SwipeStats publicly shared Tinder dataset',
-        'source_url': 'https://github.com/Ashley-Xu/AIPIFinalDataset',
+        'source_url': SOURCE_URL,
+        'download_url': URL,
         'sha256': hashlib.sha256(args.input.read_bytes()).hexdigest(),
         'filename': args.input.name,
         'record_count': audit['usable_rows'],
+        'original_rows': audit['original_rows'],
+        'bootstrap_draws_requested': args.bootstrap,
+        'seed': args.seed,
     })
     figs = make_figures(data, output / 'figures')
     write_report(output, audit, total, summary, uncertainty, correlation, diagnostics)

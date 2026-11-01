@@ -8,10 +8,10 @@ import statsmodels.formula.api as smf
 
 
 def fit_models(df: pd.DataFrame) -> tuple[pd.DataFrame, list[dict]]:
-    """Two negative-binomial models with a log(recorded_days) offset.
+    """Three negative-binomial models with a log(recorded_days) offset.
 
-    Model 1: gender only. Model 2: adds activity and likes rates. If available,
-    reported age is added when at least 80% complete. Model 3 interaction tests
+    Model 1: gender only. Model 2: adds activity and likes rates.
+    Model 3 interaction tests
     whether the association of app opens with matches varies by gender.
     """
     specs = [

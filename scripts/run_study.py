@@ -5,15 +5,16 @@ import argparse
 from pathlib import Path
 import sys
 from urllib.error import URLError
-from scripts.download_data import download_data, ROOT, FILENAME
+from scripts.download_data import download_data
+from dating_research.dataset import DEFAULT_INPUT, DEFAULT_OUTPUT
 from scripts.run_analysis import main as analyse_main
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Download and analyse public Tinder likes/matches data')
-    parser.add_argument('--data', type=Path, default=ROOT / 'data' / FILENAME,
+    parser.add_argument('--data', type=Path, default=DEFAULT_INPUT,
                         help='Local data path; download only if missing')
-    parser.add_argument('--output', type=Path, default=ROOT / 'results' / 'tinder')
+    parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument('--force-download', action='store_true')
     parser.add_argument('--bootstrap', type=int, default=2000)
     parser.add_argument('--seed', type=int, default=42)

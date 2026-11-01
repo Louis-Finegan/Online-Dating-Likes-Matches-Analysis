@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-"""Download and validate the project's freely shared Tinder pilot dataset.
-
-The Hinge input is a consent-based participant CSV; there is no supported public
-Hinge download. This script deliberately does not scrape dating platforms.
+"""Download and validate the project's sole publicly shared Tinder dataset.
 
 Usage (from any directory):
     python scripts/download_data.py
     python scripts/download_data.py --force
-    python scripts/download_data.py --output data/pilot.csv
+    python scripts/download_data.py --output data/Tinder_Data_v3_Clean_Edition.csv
 """
 
 import argparse
@@ -16,18 +13,18 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-import shutil
 import sys
 import tempfile
 from urllib import error, request
 
 ROOT = Path(__file__).resolve().parents[1]
-FILENAME = "Tinder_Data_v3_Clean_Edition.csv"
-URL = (
-    "https://raw.githubusercontent.com/Ashley-Xu/"
-    "AIPIFinalDataset/main/Tinder_Data_v3_Clean_Edition.csv"
-)
-REQUIRED_COLUMNS = {"gender", "swipe_likes", "no_of_matches", "no_of_days", "sum_app_opens"}
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from dating_research.dataset import FILENAME, URL, DEFAULT_INPUT
+from dating_research.source import REQUIRED
+
+REQUIRED_COLUMNS = set(REQUIRED)
 MAX_BYTES = 20 * 1024 * 1024
 
 
@@ -83,7 +80,7 @@ def download_data(output: Path, *, force: bool = False) -> dict:
             "bytes": output.stat().st_size,
             "sha256": sha256,
             "downloaded_utc": datetime.now(timezone.utc).isoformat(),
-            "notes": "Self-selected Tinder exports; not Hinge or population-representative.",
+            "notes": "Self-selected Tinder exports; not population-representative.",
         }
         manifest = output.with_suffix(".download.json")
         manifest.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
@@ -94,8 +91,8 @@ def download_data(output: Path, *, force: bool = False) -> dict:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Download the free Tinder likes/matches pilot CSV")
-    parser.add_argument("--output", type=Path, default=ROOT / "data" / FILENAME,
+    parser = argparse.ArgumentParser(description="Download the free Tinder likes/matches CSV")
+    parser.add_argument("--output", type=Path, default=DEFAULT_INPUT,
                         help="Destination CSV (default: project data directory)")
     parser.add_argument("--force", action="store_true", help="Replace an existing CSV after validation")
     args = parser.parse_args()

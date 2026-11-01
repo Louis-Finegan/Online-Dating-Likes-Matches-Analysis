@@ -1,141 +1,146 @@
-# Likes, Matches and Activity on Tinder
+# Tinder: Likes, Matches and App Activity
 
-A reproducible Python research project investigating **likes sent, matches obtained,
-recorded app-open activity and gender differences** using one publicly shared dataset.
-
-The motivation is understanding dating apps such as Hinge; **the actual observations
-are from Tinder, not Hinge**. Do not extrapolate findings to Hinge without data.
+A reproducible Python analysis of **one free, publicly shared Tinder dataset**:
+Ashley Xu's `Tinder_Data_v3_Clean_Edition.csv`, derived from volunteer-submitted
+SwipeStats exports. This repository uses that dataset exclusively.
 
 ## Research questions
 
-1. Do users record more **likes sent** than **total matches**?
-2. How do observed likes, matches, and match-rate distributions differ across the
-   male/female gender categories available in the source?
-3. Is the frequency of **app opens** associated with match counts after adjusting
-   for the number of dates in the app-open log and likes sent?
-4. How concentrated are matches among users (Gini and top-10% share)?
+1. How do users' counts of likes sent compare with their total matches?
+2. How do likes, matches and recorded-day rates differ by recorded gender?
+3. How is app-opening frequency associated with matches and likes sent?
+4. How concentrated are match counts across the observed users?
 
-`matches / likes_sent` is **not** the probability that a sent like became a
-match; we lack which side initiated each recorded match. Likewise, app opens are
-**not** minutes of app usage, and `no_of_days` is not independently verified
-calendar tenure. See [the study design](docs/RESEARCH_DESIGN.md).
+The analysis retains descriptive summaries, participant bootstrap intervals,
+Spearman correlations, three negative-binomial models, and Lorenz/Gini measures.
+See [research design and equations](docs/RESEARCH_DESIGN.md) and the
+[data dictionary](docs/DATA_DICTIONARY.md).
 
-## Data
+## Dataset and limitations
 
-Author/host: [Ashley Xu, AIPIFinalDataset](https://github.com/Ashley-Xu/AIPIFinalDataset)
-(`Tinder_Data_v3_Clean_Edition.csv`). According to its author, it was sourced
-from volunteer-submitted SwipeStats exports with permission. The file publicly
-listed in October 2026 had **1,209 participant rows**, subject to validation and
-exclusion rules. It includes `swipe_likes`, `no_of_matches`, `sum_app_opens`,
-`no_of_days`, `gender`; age and partner-interest codes are optional. No incoming
-likes or genuine screen-time minutes are available.
+[Ashley Xu's source repository](https://github.com/Ashley-Xu/AIPIFinalDataset)
+hosts the [CSV](https://github.com/Ashley-Xu/AIPIFinalDataset/blob/main/Tinder_Data_v3_Clean_Edition.csv).
+The verified file contains **1,209 participant rows**, including **1,059 M-coded
+and 150 F-coded users** (87.6% and 12.4%). These are source counts before exclusions.
+The current cleaning rules retain 983 rows; 226 have zero recorded days.
+See [provenance, checksum and verification](docs/DATA_PROVENANCE.md).
 
-**The original CSV is deliberately not included.** It contains additional
-sensitive fields such as birth dates and city names. The loader only reads a
-small, predefined set of non-identifying columns, and the downloader writes the
-source file into the ignored `data/` directory. Review source license and
-privacy conditions before publishing any derived data.
+- **Self-selection:** volunteers submitted their exports. This is not a
+  representative sample of Tinder users or the wider dating population.
+- **Gender imbalance:** the small female-coded group and potentially different
+  partner pools limit comparisons. The source's M/F categories are not a complete
+  representation of gender.
+- **Likes sent only:** incoming likes, profile impressions and the initiator of
+  each match are unavailable. `matches / likes_sent` is a descriptive ratio,
+  not a conversion probability; it can exceed one.
+- **App openings, not screen time:** `sum_app_opens` counts opening events. It
+  cannot measure minutes of use.
+- **Recorded days, not calendar time:** upstream code calculates `no_of_days`
+  as `len(appOpens)`. This counts dates represented in the opening log, not
+  elapsed days since account creation or necessarily days with positive activity.
+  Rates and regression offsets use this imperfect denominator. They do not
+  establish calendar-day match rates or causal effects of time spent.
+- **Different observation windows:** totals can span different periods. Outliers,
+  selection and reverse causation remain relevant. Bootstrap intervals do not
+  correct these limitations.
 
-## Quick start (Ubuntu, Debian, WSL)
+Optional age and partner-interest fields are loaded but are **not model
+covariates**. Partner-preference subgroup analysis is not currently implemented.
+Match concentration does not establish desirability, partner status or relationship quality.
 
-From the extracted project directory:
+## Run the study
+
+Use Python 3.10 or newer. Clone this repository and run commands from its root:
 
 ```bash
-python3 -m venv .venv
+git clone https://github.com/Louis-Finegan/Online-Dating-Likes-Matches-Analysis.git
+cd Online-Dating-Likes-Matches-Analysis
+python -m venv .venv
+```
+
+Activate the environment on macOS/Linux:
+
+```bash
 source .venv/bin/activate
+```
+
+Or in Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Then install and run:
+
+```bash
 python -m pip install -r requirements.txt
 python -m scripts.run_study
 ```
 
-No account, API key, Github push or Hinge login is necessary.
+No account or API key is required. The first run downloads the CSV into `data/`,
+validates its required columns and records a SHA-256 checksum and download time.
+Existing downloads are reused. Results are written to `results/tinder/`.
+Raw data and generated results remain local and are ignored by Git.
 
-`python -m scripts.run_study` performs both steps. To run them separately, use
-`python -m scripts.download_data` and then `python -m scripts.run_analysis`.
-
-The downloader verifies the required CSV columns and stores a SHA-256 checksum
-and download date next to the local file. Network access is needed **only** to
-download the publicly hosted CSV. Reuse an existing download or supply a local
-file when offline:
+The two steps can also run separately:
 
 ```bash
-python -m scripts.run_analysis --input /absolute/path/to/your.csv \
-    --output results/local_study --bootstrap 2000 --seed 42
+python -m scripts.download_data
+python -m scripts.run_analysis
 ```
 
-To force a fresh source download:
+For an offline copy of **the same source CSV**, or a separate output directory:
 
 ```bash
-python -m scripts.download_data --force
+python -m scripts.run_analysis --input data/Tinder_Data_v3_Clean_Edition.csv --output results/local_study --bootstrap 2000 --seed 42
 ```
 
-## Results
+`--bootstrap` requires at least 100 draws. Reusing an output directory overwrites
+its generated files. `python -m scripts.download_data --force` replaces the local
+CSV only after the new download passes validation; retain your old copy if needed.
+Schema validation alone does not prove a local file's identity: compare its checksum
+with the provenance record.
 
-When executed, the project generates the following **from your actual data**:
+## Repository structure
 
 ```text
-results/tinder/
-    FINDINGS.md                 # Narrative descriptive report + caveats
-    audit.json                  # Cleaning, exclusions, source limitations
-    overall.json                # Total likes, matches, Gini, top-decile share
-    gender_summary.csv          # Gender-separated descriptive measures
-    bootstrap_ci.json           # Female/Male matches/recorded-day rate ratio
-    correlations.json           # Spearman associations
-    model_diagnostics.json      # Model convergence, formula, n and AIC
-    models.csv                  # Negative-binomial coefficient table
-    dataset_manifest.json      # Input SHA-256 + provenance
-    figures/
-        01_like_match_distributions.{png,pdf}
-        02_likes_vs_matches.{png,pdf}
-        03_match_rates_by_gender.{png,pdf}
-        04_app_opens_vs_matches.{png,pdf}
-        05_lorenz_match_counts.{png,pdf}
+Online-Dating-Likes-Matches-Analysis/
+├── dating_research/          # Reusable Tinder analysis
+│   ├── dataset.py            # Single source URL, filename and default paths
+│   ├── source.py             # Selected-column loading, validation and rates
+│   ├── statistics.py         # Summaries, bootstrap, correlations and Gini
+│   ├── models.py             # Three negative-binomial specifications
+│   ├── figures.py            # Five figures, each saved as PNG and PDF
+│   └── report.py             # Findings generated from the analysis
+├── scripts/                 # Download, analyse and combined entry points
+├── tests/                   # Network-free unit and pipeline tests
+├── docs/                    # Research design, dictionary and provenance
+├── data/                    # Local CSV and download manifest; README tracked
+├── results/                 # Local generated outputs; README tracked
+├── requirements.txt         # Analysis dependencies
+└── requirements-dev.txt     # Analysis dependencies plus test runner
 ```
 
-The statistical analysis uses:
+Open `results/tinder/FINDINGS.md` after running. The output directory also holds
+the cleaning audit, input manifest, group summaries, uncertainty estimates,
+correlations, model diagnostics and figures. See the [output guide](results/README.md).
+Check model convergence before interpreting coefficients.
 
-- Descriptive counts and rates, without confusing likes sent with likes received.
-- Participant-level bootstrap intervals for **descriptive** gender rate ratios.
-- Spearman correlations for monotonic associations.
-- Negative binomial regression with offset `log(recorded_days)` and a gender–activity interaction.
-- Gini coefficients and Lorenz curves for match-count concentration.
-
-Do not treat results as representative population estimates, and do not label
-any results as causal, Hinge-specific, or evidence of hypergamy.
-
-## Validate the code
+## Tests
 
 ```bash
+python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-Unit tests use **synthetic input solely to check the software**; simulated
-values are never included in empirical reports.
+Tests use synthetic fixtures only to verify the software, including the full
+analysis pipeline and safe download replacement. They require no network and
+their outputs are not empirical findings.
 
-## Layout
+## Data handling
 
-```text
-dating_likes_matches_study/
-├── dating_research/
-│   ├── source.py          # import, validate, derive descriptives
-│   ├── statistics.py      # Gini, bootstraps, correlations
-│   ├── models.py          # negative binomial regression
-│   ├── figures.py         # plots saved locally
-│   └── report.py          # Markdown findings from actual records
-├── scripts/
-│   ├── download_data.py   # validated source download
-│   ├── run_analysis.py    # independent analysis of a local CSV
-│   └── run_study.py       # one-command download and analysis
-├── tests/
-├── docs/
-│   ├── RESEARCH_DESIGN.md
-│   └── DATA_DICTIONARY.md
-├── data/                   # source download saved locally, excluded from git
-└── requirements.txt
-```
-
-## Next-stage research
-
-The Hinge-specific question requires actual Hinge user records containing sent
-likes, received likes, match origin, app exposure and separately measured screen
-minutes. An analysis of aggregate likes/matches alone cannot identify
-socioeconomic hypergamy; that would need paired partner attributes and choices.
+The source CSV includes sensitive profile fields. The loader reads only the
+columns listed in the data dictionary; it does not export participant tables.
+Some figures show individual observations of selected counts/rates, so review
+outputs before sharing. Source attribution and use conditions are recorded in
+[DATA_PROVENANCE.md](docs/DATA_PROVENANCE.md).

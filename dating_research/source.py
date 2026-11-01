@@ -21,7 +21,7 @@ def load_tinder(path: str | Path) -> tuple[pd.DataFrame, dict]:
     """Return validated participant records and a reproducible cleaning audit.
 
     recorded_days: number of dates in the app-open log, NOT calendar tenure.
-    Source records are self-selected Tinder exports, not Hinge data.
+    Source records are self-selected Tinder exports.
     """
     path = Path(path)
     if not path.exists():
@@ -82,7 +82,7 @@ def load_tinder(path: str | Path) -> tuple[pd.DataFrame, dict]:
         'matches_greater_than_likes_sent_users': int((df['matches'] > df['likes_sent']).sum()),
         'age_observed': int(df['reported_age'].notna().sum()) if 'reported_age' in df else 0,
         'limitations': [
-            'Tinder, not Hinge; volunteer-submitted exports are not representative.',
+            'Volunteer-submitted Tinder exports are not representative; gender groups are imbalanced.',
             'Recorded days are dates with app-opening data, not independently verified tenure.',
             'App opens are not time spent in minutes.',
             'Matches include responses to incoming likes; matches/likes_sent is not a probability.',

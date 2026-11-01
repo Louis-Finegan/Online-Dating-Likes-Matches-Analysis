@@ -17,7 +17,7 @@ def write_report(out: str | Path, audit, totals, groups, bootstrap, correlations
     lines = [
         '# Likes, Matches and App Activity: Exploratory Findings', '',
         '> Generated from observed CSV records. This document is descriptive and',
-        '> exploratory, not a causal or Hinge-specific study.', '',
+        '> exploratory evidence from the sole Tinder dataset, not a causal study.', '',
         '## Source and sample', '',
         '- Dataset: publicly shared, user-contributed **Tinder** summary CSV (Ashley Xu / SwipeStats).',
         f'- Usable participants: **{audit["usable_rows"]:,}** of {audit["original_rows"]:,} rows.',
@@ -67,7 +67,7 @@ def write_report(out: str | Path, audit, totals, groups, bootstrap, correlations
         lines.append(f'- **{m["name"]}**: {status}; observations={n}.')
     lines += [
         '', '## Important limitations', '',
-        '1. These are historical Tinder exports, not Hinge interaction records.',
+        '1. These are historical, self-selected Tinder exports with imbalanced gender groups.',
         '2. Incoming likes, initiator of each match, impressions and match timing are unknown.',
         '3. App opens are not measured minutes of use. Time spent cannot be tested.',
         '4. Recorded days are app-open log dates, not independently verified account tenure.',
@@ -84,7 +84,7 @@ def write_report(out: str | Path, audit, totals, groups, bootstrap, correlations
         '- `figures/05_lorenz_match_counts`: match-count inequality.', '',
         '## Reproducibility', '',
         '- Code: `python -m scripts.run_analysis` in this repository.',
-        '- Random seed: 42; bootstrap draws: 2000 (unless overridden).',
+        f'- Random seed: {manifest.get("seed", "not recorded")}; requested bootstrap draws: {manifest.get("bootstrap_draws_requested", "not recorded")}.',
         '- Input checks and cleaning information: `audit.json`.',
         '- The original source CSV is deliberately not copied into result folders.', '',
     ]

@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import hashlib
 import subprocess
 import sys
 import numpy as np
@@ -19,7 +20,7 @@ def test_entire_analysis_on_synthetic_data(tmp_path):
     output = tmp_path / 'results'
     project = Path(__file__).resolve().parents[1]
     process = subprocess.run([sys.executable, '-m', 'scripts.run_analysis',
-             '--input', str(data), '--output', str(output), '--bootstrap', '200'],
+             '--input', str(data), '--output', str(output), '--bootstrap', '200', '--seed', '123'],
              cwd=project, capture_output=True, text=True)
     assert process.returncode == 0, process.stderr
     assert (output/'FINDINGS.md').exists()
@@ -29,7 +30,12 @@ def test_entire_analysis_on_synthetic_data(tmp_path):
     assert (output/'figures'/'05_lorenz_match_counts.pdf').exists()
     audit = json.loads((output/'audit.json').read_text())
     assert audit['usable_rows'] == 130
-    assert 'Hinge' not in (output/'FINDINGS.md').read_text().split('## Source and sample')[1].split('## Overall')[0]
+    manifest = json.loads((output/'dataset_manifest.json').read_text())
+    assert manifest['sha256'] == hashlib.sha256(data.read_bytes()).hexdigest()
+    assert manifest['original_rows'] == 130
+    assert manifest['seed'] == 123
+    assert manifest['bootstrap_draws_requested'] == 200
+    assert 'Random seed: 123; requested bootstrap draws: 200.' in (output/'FINDINGS.md').read_text()
 
 
 def test_one_command_reuses_existing_file_without_network(tmp_path):

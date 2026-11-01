@@ -9,8 +9,8 @@ Only these source variables are read by the project:
 | `no_of_matches` | `matches` | Total matches (irrespective of initiating side) |
 | `no_of_days` | `recorded_days` | Number of dates in the app-open log, **not independently verified tenure** |
 | `sum_app_opens` | `app_opens` | Count of app-open events, **not minutes** |
-| `user_age` (optional) | `reported_age` | Age-like source variable, not required for the analysis |
-| `interestedIn` (optional) | `interested_in` | Coded partner gender preference, not an orientation measure |
+| `user_age` (optional) | `reported_age` | Upstream age at account creation; values outside 18–100 set to missing; not a model covariate |
+| `interestedIn` (optional) | `interested_in` | M/F mapped to Male/Female; other codes, including `M and F`, currently become missing; not used in summaries or models |
 
 Derived columns:
 
@@ -26,5 +26,11 @@ Derived columns:
 Negative or noninteger counts, zero/nonpositive recorded days, missing essential
 variables and unrepresented gender codes are excluded with an audit count.
 Optional age or partner preference can be missing; they are not used for causal
-adjustment. No user IDs, cities, dates of birth, occupations, messages or
+adjustment or subgroup analysis. No sexual orientation is inferred. The source
+contains 57 `M and F` entries; the current loader does not analyse this category.
+No user IDs, cities, dates of birth, occupations, messages or
 individual participant rows are written into the results directory.
+
+`recorded_days` counts date entries in the app-opening log, not calendar duration
+or necessarily days with positive opens. See [the upstream derivation](DATA_PROVENANCE.md).
+The existing summary CSV's `*_per_day_median` columns also use recorded days.
