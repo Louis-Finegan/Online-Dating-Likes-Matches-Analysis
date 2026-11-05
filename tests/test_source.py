@@ -66,3 +66,19 @@ def test_source_education_is_optional_and_not_inferred(tmp_path):
     assert data.education_group.iloc[1] == 'Listed education'
     assert data.education_group.iloc[2:].isna().all()
     assert audit['education_missing_or_unrecognized'] == 2
+
+
+def test_employment_proxy_rule_and_missing_values(tmp_path):
+    import pandas as pd
+    from dating_research.source import load_tinder
+    p = tmp_path / 'jobs.csv'
+    jobs = ['False', ' unknown ', 'FALSE', 'Software Engineer', 'Student', None, '']
+    pd.DataFrame({'gender': ['F'] * len(jobs), 'swipe_likes': [10] * len(jobs),
+        'no_of_matches': [2] * len(jobs), 'sum_app_opens': [20] * len(jobs),
+        'no_of_days': [5] * len(jobs), 'jobTitle': jobs}).to_csv(p, index=False)
+    data, audit = load_tinder(p)
+    assert list(data.employment_group.iloc[:3]) == ['Unemployed (assumed)'] * 3
+    assert list(data.employment_group.iloc[3:5]) == ['Employed (assumed)'] * 2
+    assert data.employment_group.iloc[5:].isna().all()
+    assert audit['employment_missing'] == 2
+    assert 'profession_source' not in data

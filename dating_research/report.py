@@ -82,12 +82,12 @@ def write_report(out: str | Path, audit, totals, groups, bootstrap, correlations
         n = m.get('n', 'n/a')
         lines.append(f'- **{m["name"]}**: {status}; observations={n}.')
     for m in models:
-        test = m.get('education_likelihood_ratio_test')
+        test = m.get('education_likelihood_ratio_test') or m.get('employment_likelihood_ratio_test')
         if test:
-            lines += ['', 'Education addition, same-sample likelihood-ratio test:',
+            lines += ['', f'{m["name"]} addition, same-sample likelihood-ratio test:',
                       f'- Chi-square={test["statistic"]:.3f}; df={test["df"]}; p={test["p_value"]:.4g}; N={test["n"]}.',
-                      '- Null: all education coefficients are zero. Exploratory, unadjusted test.',
-                      '- Source-listed education is not verified attainment; missing or unrecognized categories are excluded only from this model.']
+                      f'- Null: {test["null"]}. Exploratory, unadjusted test.',
+                      '- Source education/employment categories are not verified attainment/status; missing categories are excluded only from the corresponding model.']
     lines += [
         '', '## Important limitations', '',
         '1. These are historical, self-selected Tinder exports with imbalanced gender groups.',
@@ -106,7 +106,7 @@ def write_report(out: str | Path, audit, totals, groups, bootstrap, correlations
         '- `figures/04_app_opens_vs_matches`: app-open frequency versus matches.',
         '- `figures/05_lorenz_match_counts`: match-count inequality.',
         '- `figures/06_coefficients_<model>`: converged model rate ratios and 95% Wald intervals.',
-        '- `figures/07_model_match_rate_curves`: Models 2/3/4 expected matches per recorded day,',
+        '- `figures/07_model_match_rate_curves`: Models 2/3/4/5 expected matches per recorded day,',
         '  with pointwise 95% mean confidence bands, not individual prediction intervals.',
         '  Likes/day is held at the fitted sample pooled median; curves stay within each gender’s observed opening range.',
         '- Model figures are omitted for skipped, failed or unstable fits. Plotted values are exported as CSVs.', '',

@@ -15,7 +15,7 @@ Run `python -m scripts.run_study` from the repository root. Generated files in
 | `correlations_by_gender.json` | The same three associations within each recorded gender, with pairwise N, rho and p-value |
 | `models.csv` | Negative-binomial coefficients and rate ratios |
 | `model_diagnostics.json` | Model status, formula, sample size and fit diagnostics |
-| `figures/` | Five descriptive plots, up to four coefficient plots and one model-curve comparison, each in PNG and PDF format |
+| `figures/` | Five descriptive plots, up to five coefficient plots and one model-curve comparison, each in PNG and PDF format |
 | `figures/coefficients_<model>.csv` | Plotted rate ratios and 95% Wald intervals (intercept and dispersion omitted) |
 | `figures/model_prediction_curves.csv` | Plotted expected matches/recorded day, pointwise 95% mean confidence limits, and reference likes rate |
 
@@ -34,7 +34,7 @@ confidence intervals and a reference at 1. Continuous terms represent one unit
 of `log(1 + rate)`, not one extra like/open. In the interaction model the gender
 contrast is at zero opens; the interaction is a ratio of rate ratios.
 
-`07_model_match_rate_curves` compares Models 2 and 3 by recorded gender, plus Model 4 by gender and source-listed education. Likes
+`07_model_match_rate_curves` compares Models 2 and 3 by recorded gender, plus Model 4 by gender and source-listed education and Model 5 by gender and assumed employment. Likes
 per recorded day are fixed at the fitted sample pooled median (exported to CSV),
 and expected counts use one recorded day (offset zero). Each curve covers its
 own group's observed opening-rate range; rugs show observed support. The x-axis
@@ -68,3 +68,22 @@ exploratory, model-based, and unadjusted for multiple comparisons.
 The curve CSV includes `education_group` for Model 4; each curve uses that
 specific gender/education subgroup's observed opening range. Conditional likes
 are fixed at the full fitted sample median. Sparse subgroups imply weak support.
+
+## Profession proxy model (Model 5)
+
+`employment_adjusted` adds `C(employment_group)` to Model 2 **instead of
+education**, with no interactions. Following the requested assumption, trimmed,
+case-insensitive `False` and `unknown` in `jobTitle` map to `Unemployed (assumed)`
+(reference); every other nonempty recorded value maps to `Employed (assumed)`.
+This intentionally includes student/ambiguous titles: it is a job-listing proxy,
+not verified employment status. Blank/missing values remain missing rather than
+being classified as employed. An absent optional column skips this model.
+Raw profession strings are discarded after classification and are not exported.
+
+As for Model 4, coefficients have Wald p-values and 95% intervals, and diagnostics
+include a same-sample likelihood-ratio test versus the activity baseline.
+Both proxy groups require at least ten observations. The audit records counts,
+missingness, and the rule. Prediction curves include `employment_group`, use
+subgroup-specific observed opening ranges, and hold likes at the pooled median.
+Dashed lines show the assumed-employed or education-listed categories; colors
+retain gender. All tests are exploratory and unadjusted for multiple comparisons.

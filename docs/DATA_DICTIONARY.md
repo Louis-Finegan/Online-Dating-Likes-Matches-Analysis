@@ -43,3 +43,12 @@ education` and `Has high school and/or college education` to the categorical
 These describe source encoding, not verified attainment. Missing/unrecognized
 values remain missing. They exclude users only from Model 4; Models 1–3 retain
 their existing sample. The audit records category counts and missing values.
+
+## Optional profession proxy
+
+`jobTitle` is used only to derive `employment_group`: `False`/`unknown`
+(case-insensitive, trimmed) => `Unemployed (assumed)`; other nonempty values =>
+`Employed (assumed)`. Missing/blank values remain missing. This user-requested
+rule cannot distinguish unemployment from a hidden/omitted profile field, and
+counts students or ambiguous titles as employed. No actual employment status
+is verified. Raw titles are dropped; only the two categories enter Model 5.

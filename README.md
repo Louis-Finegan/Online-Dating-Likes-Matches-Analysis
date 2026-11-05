@@ -159,3 +159,12 @@ interactions. It exports coefficient tests, a same-sample likelihood-ratio test,
 and coefficient/prediction figures. These categories describe the source field,
 not verified qualifications. Missing or unrecognized education does not remove
 users from the existing models. See the output guide for coding and limitations.
+
+### Assumed employment from profession
+
+Model 5 adds a binary proxy derived from `jobTitle` to the gender/likes/activity
+baseline, without education or interactions. Under the requested rule, `False`
+and `unknown` mean assumed unemployed; other nonempty titles mean assumed
+employed. This measures a listing-based assumption, not verified employment.
+Coefficient tests, same-sample likelihood-ratio tests, confidence plots and CSVs
+are generated as for the education model. Missing titles affect only Model 5.

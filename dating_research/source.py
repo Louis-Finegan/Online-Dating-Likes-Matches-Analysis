@@ -14,7 +14,7 @@ REQUIRED = {
     'sum_app_opens': 'app_opens',
     'no_of_days': 'recorded_days',
 }
-OPTIONAL = {'user_age': 'reported_age', 'interestedIn': 'interested_in', 'education': 'education_source'}
+OPTIONAL = {'user_age': 'reported_age', 'interestedIn': 'interested_in', 'education': 'education_source', 'jobTitle': 'profession_source'}
 
 
 def load_tinder(path: str | Path) -> tuple[pd.DataFrame, dict]:
@@ -72,6 +72,20 @@ def load_tinder(path: str | Path) -> tuple[pd.DataFrame, dict]:
     df = df.drop(columns=['education_source'], errors='ignore')
     audit['education_counts'] = {str(k): int(v) for k, v in df.education_group.value_counts().items()}
     audit['education_missing_or_unrecognized'] = int(df.education_group.isna().sum())
+
+    # User-requested proxy: a missing/false job listing is not verified unemployment.
+    profession = df.get('profession_source', pd.Series(pd.NA, index=df.index, dtype='string'))
+    profession = profession.astype('string').str.strip()
+    employment = pd.Series(pd.NA, index=df.index, dtype='string')
+    present = profession.notna() & profession.ne('')
+    employment.loc[present] = 'Employed (assumed)'
+    employment.loc[present & profession.str.casefold().isin(['false', 'unknown'])] = 'Unemployed (assumed)'
+    df['employment_group'] = pd.Categorical(employment,
+        categories=['Unemployed (assumed)', 'Employed (assumed)'])
+    df = df.drop(columns=['profession_source'], errors='ignore')
+    audit['employment_counts'] = {str(k): int(v) for k, v in df.employment_group.value_counts().items()}
+    audit['employment_missing'] = int(df.employment_group.isna().sum())
+    audit['employment_rule'] = 'False/unknown jobTitle => unemployed; all other nonempty titles => employed; assumed, not verified'
 
     # These ratios are descriptors. They are not causal effects or probabilities.
     df['likes_per_recorded_day'] = df['likes_sent'] / df['recorded_days']
