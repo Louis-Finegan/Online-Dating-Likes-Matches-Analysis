@@ -82,8 +82,7 @@ def make_model_figures(coefficients, fitted_results, output):
         ax.axvline(1, color='0.5', linestyle='--')
         ax.set_yticks(y, table.term)
         ax.invert_yaxis()
-        ax.set_xscale('log')
-        ax.set(xlabel='Rate ratio (log scale), 95% Wald confidence interval', title=titles[name])
+        ax.set(xlabel='Rate ratio, 95% Wald confidence interval', title=titles[name])
         fig.text(0.5, 0.01, 'Exploratory associations. Continuous terms: +1 in log(1 + rate).\n'
                  'Interaction model: gender contrast is at zero opens; interaction is a ratio of rate ratios.',
                  ha='center', fontsize=8)
@@ -117,7 +116,7 @@ def make_model_figures(coefficients, fitted_results, output):
         ax.grid(alpha=0.15)
     pd.concat(tables, ignore_index=True).to_csv(directory / 'model_prediction_curves.csv', index=False)
     fig.text(0.5, 0.01, 'Pointwise 95% confidence bands for the mean, not individual prediction intervals.\n'
-             'Likes/day fixed at the fitted sample pooled median; each curve stays within its group’s observed opening range.\n'
+             'Likes/day fixed at the fitted sample pooled median; each curve stays within its group\'s observed opening range.\n'
              'Rugs show opening-rate support. Recorded days are log dates, not tenure. Exploratory, not causal.',
              ha='center', fontsize=9)
     fig.tight_layout(rect=(0, 0.15, 1, 1))
