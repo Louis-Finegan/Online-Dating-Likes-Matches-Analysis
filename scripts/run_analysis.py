@@ -17,6 +17,7 @@ from dating_research.statistics import (group_summary, overall_summary,
                                          bootstrap_rate_ratio, spearman_associations, spearman_by_gender)
 from dating_research.models import fit_models
 from dating_research.figures import make_figures
+from dating_research.model_figures import make_model_figures
 from dating_research.report import write_report
 
 
@@ -39,7 +40,8 @@ def main(argv=None):
     uncertainty = bootstrap_rate_ratio(data, draws=args.bootstrap, seed=args.seed)
     correlation = spearman_associations(data)
     gender_correlations = spearman_by_gender(data)
-    coefficients, diagnostics = fit_models(data)
+    fitted_results = {}
+    coefficients, diagnostics = fit_models(data, fitted_results=fitted_results)
     summary.to_csv(output / 'gender_summary.csv', index=False)
     coefficients.to_csv(output / 'models.csv', index=False)
     save_json(output / 'audit.json', audit)
@@ -60,6 +62,7 @@ def main(argv=None):
         'seed': args.seed,
     })
     figs = make_figures(data, output / 'figures')
+    figs += make_model_figures(coefficients, fitted_results, output / 'figures')
     write_report(output, audit, total, summary, uncertainty, correlation, diagnostics,
                  gender_correlations=gender_correlations)
     print(f'Analysed {len(data):,} records. Figures: {len(figs)}.')

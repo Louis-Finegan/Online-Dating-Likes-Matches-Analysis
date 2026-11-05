@@ -112,7 +112,8 @@ Online-Dating-Likes-Matches-Analysis/
 │   ├── source.py             # Selected-column loading, validation and rates
 │   ├── statistics.py         # Summaries, bootstrap, correlations and Gini
 │   ├── models.py             # Three negative-binomial specifications
-│   ├── figures.py            # Five figures, each saved as PNG and PDF
+│   ├── figures.py            # Five descriptive figures, PNG and PDF
+│   ├── model_figures.py      # Model intervals, prediction curves and plotted CSVs
 │   └── report.py             # Findings generated from the analysis
 ├── scripts/                 # Download, analyse and combined entry points
 ├── tests/                   # Network-free unit and pipeline tests
@@ -123,7 +124,11 @@ Online-Dating-Likes-Matches-Analysis/
 └── requirements-dev.txt     # Analysis dependencies plus test runner
 ```
 
-Open `results/tinder/FINDINGS.md` after running. The output directory also holds
+Open `results/tinder/FINDINGS.md` after running. The figures also include model
+rate ratios with 95% confidence intervals and expected match-rate curves for
+Models 2 and 3 with pointwise 95% confidence bands for the mean. These are not
+individual prediction intervals. Plotted estimates are exported as CSVs; see
+the [output guide](results/README.md) for interpretation. The output directory also holds
 the cleaning audit, input manifest, group summaries, uncertainty estimates,
 correlations, model diagnostics and figures. See the [output guide](results/README.md).
 Check model convergence before interpreting coefficients.

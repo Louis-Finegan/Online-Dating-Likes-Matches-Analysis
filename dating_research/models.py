@@ -7,8 +7,11 @@ import pandas as pd
 import statsmodels.formula.api as smf
 
 
-def fit_models(df: pd.DataFrame) -> tuple[pd.DataFrame, list[dict]]:
+def fit_models(df: pd.DataFrame, *, fitted_results: dict | None = None) -> tuple[pd.DataFrame, list[dict]]:
     """Three negative-binomial models with a log(recorded_days) offset.
+
+    Optionally populate fitted_results with supported fits and their plot data;
+    the existing two-value return interface is preserved.
 
     Model 1: gender only. Model 2: adds activity and likes rates.
     Model 3 interaction tests
@@ -42,6 +45,11 @@ def fit_models(df: pd.DataFrame) -> tuple[pd.DataFrame, list[dict]]:
                            'offset': 'log(recorded_days)',
                            'converged': converged, 'log_likelihood': float(result.llf),
                            'aic': float(result.aic)})
+            if converged and finite and fitted_results is not None:
+                plot_data = model_data.assign(
+                    likes_per_recorded_day=np.expm1(model_data.log_likes_rate),
+                    opens_per_recorded_day=np.expm1(model_data.log_opens_rate))
+                fitted_results[name] = (result, plot_data)
             for term in result.params.index:
                 estimate = float(result.params[term]); se = float(result.bse[term])
                 is_dispersion = term == 'alpha'
