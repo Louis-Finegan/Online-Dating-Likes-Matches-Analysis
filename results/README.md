@@ -15,7 +15,7 @@ Run `python -m scripts.run_study` from the repository root. Generated files in
 | `correlations_by_gender.json` | The same three associations within each recorded gender, with pairwise N, rho and p-value |
 | `models.csv` | Negative-binomial coefficients and rate ratios |
 | `model_diagnostics.json` | Model status, formula, sample size and fit diagnostics |
-| `figures/` | Five descriptive plots, up to three coefficient plots and one model-curve comparison, each in PNG and PDF format |
+| `figures/` | Five descriptive plots, up to four coefficient plots and one model-curve comparison, each in PNG and PDF format |
 | `figures/coefficients_<model>.csv` | Plotted rate ratios and 95% Wald intervals (intercept and dispersion omitted) |
 | `figures/model_prediction_curves.csv` | Plotted expected matches/recorded day, pointwise 95% mean confidence limits, and reference likes rate |
 
@@ -29,12 +29,12 @@ The legacy summary columns `matches_per_day_median`, `likes_per_day_median` and
 
 ## Exploratory model plots
 
-`06_coefficients_<model>` shows rate ratios on a log axis, with 95% Wald
+`06_coefficients_<model>` shows rate ratios on a linear axis, with 95% Wald
 confidence intervals and a reference at 1. Continuous terms represent one unit
 of `log(1 + rate)`, not one extra like/open. In the interaction model the gender
 contrast is at zero opens; the interaction is a ratio of rate ratios.
 
-`07_model_match_rate_curves` compares Models 2 and 3 by recorded gender. Likes
+`07_model_match_rate_curves` compares Models 2 and 3 by recorded gender, plus Model 4 by gender and source-listed education. Likes
 per recorded day are fixed at the fitted sample pooled median (exported to CSV),
 and expected counts use one recorded day (offset zero). Each curve covers its
 own group's observed opening-rate range; rugs show observed support. The x-axis
@@ -48,3 +48,23 @@ Skipped, failed and unstable fits remain documented in the diagnostics.
 Use a fresh output directory to avoid retaining figures from an older run.
 These are exploratory associations, not causal effects; recorded days are log
 entries rather than verified calendar tenure.
+
+## Education model (Model 4)
+
+`education_adjusted` adds `C(education_group)` to Model 2, with no interactions.
+The two exact source strings map to `No listed education` (reference) and
+`Listed education`. They must not be interpreted as verified qualifications or
+absence of schooling; the original field's missingness/encoding is uncertain.
+Unrecognized/missing strings remain missing, and only this model excludes them.
+The audit records education category counts and missing/unrecognized values.
+Both education categories need at least ten observations; otherwise this model
+is skipped. No degrees or ordered education scores are inferred.
+
+`models.csv` contains coefficient Wald p-values and 95% rate-ratio intervals as
+for other models. `model_diagnostics.json` additionally records an education
+likelihood-ratio test against Model 2 refitted on the identical complete-case
+sample. Its null is that all education coefficients equal zero. Tests are
+exploratory, model-based, and unadjusted for multiple comparisons.
+The curve CSV includes `education_group` for Model 4; each curve uses that
+specific gender/education subgroup's observed opening range. Conditional likes
+are fixed at the full fitted sample median. Sparse subgroups imply weak support.

@@ -14,7 +14,7 @@ REQUIRED = {
     'sum_app_opens': 'app_opens',
     'no_of_days': 'recorded_days',
 }
-OPTIONAL = {'user_age': 'reported_age', 'interestedIn': 'interested_in'}
+OPTIONAL = {'user_age': 'reported_age', 'interestedIn': 'interested_in', 'education': 'education_source'}
 
 
 def load_tinder(path: str | Path) -> tuple[pd.DataFrame, dict]:
@@ -62,6 +62,16 @@ def load_tinder(path: str | Path) -> tuple[pd.DataFrame, dict]:
             df['interested_in'].astype('string').str.strip().str.upper()
               .map({'F': 'Female', 'M': 'Male'})
         )
+
+    # Preserve only the two documented source categories, without inferring degrees.
+    mapping = {'Has no high school or college education': 'No listed education',
+               'Has high school and/or college education': 'Listed education'}
+    education = df.get('education_source', pd.Series(pd.NA, index=df.index, dtype='string'))
+    df['education_group'] = pd.Categorical(education.astype('string').str.strip().map(mapping),
+        categories=['No listed education', 'Listed education'])
+    df = df.drop(columns=['education_source'], errors='ignore')
+    audit['education_counts'] = {str(k): int(v) for k, v in df.education_group.value_counts().items()}
+    audit['education_missing_or_unrecognized'] = int(df.education_group.isna().sum())
 
     # These ratios are descriptors. They are not causal effects or probabilities.
     df['likes_per_recorded_day'] = df['likes_sent'] / df['recorded_days']

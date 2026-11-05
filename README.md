@@ -151,3 +151,11 @@ columns listed in the data dictionary; it does not export participant tables.
 Some figures show individual observations of selected counts/rates, so review
 outputs before sharing. Source attribution and use conditions are recorded in
 [DATA_PROVENANCE.md](docs/DATA_PROVENANCE.md).
+
+### Source-listed education
+
+Model 4 adds the source's binary education category to Model 2 without
+interactions. It exports coefficient tests, a same-sample likelihood-ratio test,
+and coefficient/prediction figures. These categories describe the source field,
+not verified qualifications. Missing or unrecognized education does not remove
+users from the existing models. See the output guide for coding and limitations.

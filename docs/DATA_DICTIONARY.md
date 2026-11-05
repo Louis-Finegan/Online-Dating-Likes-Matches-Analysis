@@ -34,3 +34,12 @@ individual participant rows are written into the results directory.
 `recorded_days` counts date entries in the app-opening log, not calendar duration
 or necessarily days with positive opens. See [the upstream derivation](DATA_PROVENANCE.md).
 The existing summary CSV's `*_per_day_median` columns also use recorded days.
+
+## Optional source-listed education
+
+`education` maps only the exact source values `Has no high school or college
+education` and `Has high school and/or college education` to the categorical
+`education_group` values `No listed education` (reference) and `Listed education`.
+These describe source encoding, not verified attainment. Missing/unrecognized
+values remain missing. They exclude users only from Model 4; Models 1–3 retain
+their existing sample. The audit records category counts and missing values.

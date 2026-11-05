@@ -35,7 +35,11 @@ def prediction_table(result, data):
     terms = [term for term in result.params.index if term != 'alpha']
     reference_likes = float(data.likes_per_recorded_day.median())
     rows = []
-    for gender, group in data.groupby('gender', observed=True, sort=True):
+    education_model = any('C(education_group)' in term for term in terms)
+    grouping = ['gender', 'education_group'] if education_model else ['gender']
+    for key, group in data.groupby(grouping, observed=True, sort=True):
+        gender = key[0] if isinstance(key, tuple) else key
+        education = key[1] if education_model else None
         lo, hi = group.opens_per_recorded_day.min(), group.opens_per_recorded_day.max()
         opens = np.expm1(np.linspace(np.log1p(lo), np.log1p(hi), 150))
         grid = pd.DataFrame({'log_opens_rate': np.log1p(opens),
@@ -50,6 +54,8 @@ def prediction_table(result, data):
                     continue
                 if factor.startswith('C(gender)[T.') and factor.endswith(']'):
                     values *= float(str(gender) == factor[len('C(gender)[T.'):-1])
+                elif factor.startswith('C(education_group)[T.') and factor.endswith(']'):
+                    values *= float(str(education) == factor[len('C(education_group)[T.'):-1])
                 else:
                     values *= grid[factor].to_numpy()
             columns.append(values)
@@ -59,6 +65,8 @@ def prediction_table(result, data):
         rows.append(pd.DataFrame({'gender': str(gender), 'opens_per_recorded_day': opens,
             'reference_likes_per_recorded_day': reference_likes, 'recorded_days': 1,
             'expected_matches_per_recorded_day': mean, 'ci95_low': low, 'ci95_high': high}))
+        if education_model:
+            rows[-1]['education_group'] = str(education)
     return pd.concat(rows, ignore_index=True)
 
 
@@ -69,7 +77,8 @@ def make_model_figures(coefficients, fitted_results, output):
     figures = []
     titles = {'gender_only': 'Model 1: gender only',
               'likes_and_activity': 'Model 2: likes and activity',
-              'activity_interaction': 'Model 3: activity interaction'}
+              'activity_interaction': 'Model 3: activity interaction',
+              'education_adjusted': 'Model 4: source-listed education'}
     for name in fitted_results:
         table = coefficients.loc[(coefficients.model == name) &
                                  ~coefficients.term.isin(['Intercept', 'alpha'])].copy()
@@ -90,7 +99,7 @@ def make_model_figures(coefficients, fitted_results, output):
         filename = f'06_coefficients_{name}'
         _save(directory, filename)
         figures.append(filename)
-    curve_models = [n for n in ('likes_and_activity', 'activity_interaction') if n in fitted_results]
+    curve_models = [n for n in ('likes_and_activity', 'activity_interaction', 'education_adjusted') if n in fitted_results]
     if not curve_models:
         return figures
     fig, axes = plt.subplots(1, len(curve_models), figsize=(7 * len(curve_models), 5), squeeze=False, sharey=True)
@@ -100,12 +109,19 @@ def make_model_figures(coefficients, fitted_results, output):
         table = prediction_table(result, data)
         table.insert(0, 'model', name)
         tables.append(table)
-        for gender, group in table.groupby('gender', sort=True):
+        grouping = ['gender', 'education_group'] if 'education_group' in table else ['gender']
+        for key, group in table.groupby(grouping, observed=True, sort=True):
+            gender = key[0] if isinstance(key, tuple) else key
+            label = ' / '.join(map(str, key)) if isinstance(key, tuple) else str(key)
             line, = ax.plot(group.opens_per_recorded_day, group.expected_matches_per_recorded_day,
-                            label=str(gender))
+                            label=label, color='#1f77b4' if gender == 'Female' else '#ff7f0e',
+                            linestyle='--' if 'education_group' in table and key[1] == 'Listed education' else '-')
             ax.fill_between(group.opens_per_recorded_day, group.ci95_low, group.ci95_high,
                             color=line.get_color(), alpha=0.2)
-            observed = data.loc[data.gender == gender, 'opens_per_recorded_day']
+            mask = data.gender == gender
+            if 'education_group' in table:
+                mask &= data.education_group == key[1]
+            observed = data.loc[mask, 'opens_per_recorded_day']
             # Rugs show observed support, without adding user-level data to CSVs.
             ax.plot(observed, np.full(len(observed), 0.015 if gender == 'Female' else 0.045),
                     '|', color=line.get_color(), alpha=0.15, transform=ax.get_xaxis_transform())
@@ -116,7 +132,7 @@ def make_model_figures(coefficients, fitted_results, output):
         ax.grid(alpha=0.15)
     pd.concat(tables, ignore_index=True).to_csv(directory / 'model_prediction_curves.csv', index=False)
     fig.text(0.5, 0.01, 'Pointwise 95% confidence bands for the mean, not individual prediction intervals.\n'
-             'Likes/day fixed at the fitted sample pooled median; each curve stays within its group\'s observed opening range.\n'
+             'Likes/day fixed at the fitted sample pooled median; each curve stays within its gender/education group observed opening range.\n'
              'Rugs show opening-rate support. Recorded days are log dates, not tenure. Exploratory, not causal.',
              ha='center', fontsize=9)
     fig.tight_layout(rect=(0, 0.15, 1, 1))

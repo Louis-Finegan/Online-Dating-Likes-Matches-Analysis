@@ -51,3 +51,18 @@ def test_fractional_counts_dropped(tmp_path):
     df, audit = load_tinder(path)
     assert len(df) == 1
     assert audit['dropped_invalid_or_unrepresented_gender'] == 1
+
+
+def test_source_education_is_optional_and_not_inferred(tmp_path):
+    import pandas as pd
+    from dating_research.source import load_tinder
+    path = tmp_path / 'education.csv'
+    pd.DataFrame({'gender': ['F'] * 4, 'swipe_likes': [10] * 4,
+        'no_of_matches': [2] * 4, 'sum_app_opens': [20] * 4, 'no_of_days': [5] * 4,
+        'education': ['Has no high school or college education',
+                      'Has high school and/or college education', 'Some University', None]}).to_csv(path, index=False)
+    data, audit = load_tinder(path)
+    assert data.education_group.iloc[0] == 'No listed education'
+    assert data.education_group.iloc[1] == 'Listed education'
+    assert data.education_group.iloc[2:].isna().all()
+    assert audit['education_missing_or_unrecognized'] == 2

@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import warnings
+from scipy.stats import chi2
 import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 
 
 def fit_models(df: pd.DataFrame, *, fitted_results: dict | None = None) -> tuple[pd.DataFrame, list[dict]]:
-    """Three negative-binomial models with a log(recorded_days) offset.
+    """Four negative-binomial models with a log(recorded_days) offset.
 
     Optionally populate fitted_results with supported fits and their plot data;
     the existing two-value return interface is preserved.
@@ -16,19 +17,30 @@ def fit_models(df: pd.DataFrame, *, fitted_results: dict | None = None) -> tuple
     Model 1: gender only. Model 2: adds activity and likes rates.
     Model 3 interaction tests
     whether the association of app opens with matches varies by gender.
+    Model 4 adds categorical source-listed education to Model 2 (no interactions).
     """
     specs = [
         ('gender_only', 'matches ~ C(gender)'),
         ('likes_and_activity', 'matches ~ C(gender) + log_likes_rate + log_opens_rate'),
         ('activity_interaction', 'matches ~ C(gender) * log_opens_rate + log_likes_rate'),
+        ('education_adjusted', 'matches ~ C(gender) + log_likes_rate + log_opens_rate + C(education_group)'),
     ]
     output = []
     models = []
     for name, formula in specs:
         needed = ['matches', 'gender', 'recorded_days', 'log_likes_rate', 'log_opens_rate']
+        if name == 'education_adjusted':
+            if 'education_group' not in df or df.education_group.nunique() < 2:
+                models.append({'name': name, 'status': 'skipped', 'reason': 'need two observed education categories'})
+                continue
+            needed.append('education_group')
         model_data = df[needed].replace([np.inf, -np.inf], np.nan).dropna().copy()
         counts = model_data['gender'].value_counts()
         model_data = model_data.loc[model_data['gender'].isin(counts[counts >= 10].index)]
+        if name == 'education_adjusted' and (model_data.education_group.nunique() < 2 or
+                (model_data.education_group.value_counts() < 10).any()):
+            models.append({'name': name, 'status': 'skipped', 'reason': 'need at least ten users per education category'})
+            continue
         if len(model_data) < 50 or model_data['gender'].nunique() < 2 or model_data['matches'].nunique() < 3:
             models.append({'name': name, 'status': 'skipped', 'reason': 'insufficient observations/groups/variation'})
             continue
@@ -45,6 +57,20 @@ def fit_models(df: pd.DataFrame, *, fitted_results: dict | None = None) -> tuple
                            'offset': 'log(recorded_days)',
                            'converged': converged, 'log_likelihood': float(result.llf),
                            'aic': float(result.aic)})
+            if name == 'education_adjusted' and converged and finite:
+                # Compare nested models on exactly the same complete-case sample.
+                reduced = smf.negativebinomial(
+                    'matches ~ C(gender) + log_likes_rate + log_opens_rate',
+                    data=model_data, offset=np.log(model_data.recorded_days)).fit(disp=0, maxiter=400)
+                if reduced.mle_retvals.get('converged', False) and np.isfinite(reduced.llf):
+                    statistic = float(2 * (result.llf - reduced.llf))
+                    degrees = int(len(result.params) - len(reduced.params))
+                    if statistic >= -1e-6 and degrees > 0:
+                        models[-1]['education_likelihood_ratio_test'] = {
+                            'null': 'all education coefficients are zero',
+                            'statistic': max(0., statistic), 'df': degrees,
+                            'p_value': float(chi2.sf(max(0., statistic), degrees)),
+                            'n': int(len(model_data)), 'reduced_log_likelihood': float(reduced.llf)}
             if converged and finite and fitted_results is not None:
                 plot_data = model_data.assign(
                     likes_per_recorded_day=np.expm1(model_data.log_likes_rate),
