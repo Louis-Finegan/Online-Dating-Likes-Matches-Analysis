@@ -79,8 +79,8 @@ def make_model_figures(coefficients, fitted_results, output):
     titles = {'gender_only': 'Model 1: gender only',
               'likes_and_activity': 'Model 2: likes and activity',
               'activity_interaction': 'Model 3: activity interaction',
-              'education_adjusted': 'Model 4: source-listed education',
-              'employment_adjusted': 'Model 5: assumed employment'}
+              'education': 'Model 4: education',
+              'employment': 'Model 5: employment'}
     for name in fitted_results:
         table = coefficients.loc[(coefficients.model == name) &
                                  ~coefficients.term.isin(['Intercept', 'alpha'])].copy()
@@ -101,7 +101,7 @@ def make_model_figures(coefficients, fitted_results, output):
         filename = f'06_coefficients_{name}'
         _save(directory, filename)
         figures.append(filename)
-    curve_models = [n for n in ('likes_and_activity', 'activity_interaction', 'education_adjusted', 'employment_adjusted') if n in fitted_results]
+    curve_models = [n for n in ('likes_and_activity', 'activity_interaction', 'education', 'employment') if n in fitted_results]
     if not curve_models:
         return figures
     ncols = min(2, len(curve_models))
@@ -122,7 +122,7 @@ def make_model_figures(coefficients, fitted_results, output):
             label = ' / '.join(map(str, key)) if isinstance(key, tuple) else str(key)
             line, = ax.plot(group.opens_per_recorded_day, group.expected_matches_per_recorded_day,
                             label=label, color='#1f77b4' if gender == 'Female' else '#ff7f0e',
-                            linestyle='--' if category and key[1] in ('Listed education', 'Employed (assumed)') else '-')
+                            linestyle='--' if category and key[1] in ('educated', 'Employed') else '-')
             ax.fill_between(group.opens_per_recorded_day, group.ci95_low, group.ci95_high,
                             color=line.get_color(), alpha=0.2)
             mask = data.gender == gender

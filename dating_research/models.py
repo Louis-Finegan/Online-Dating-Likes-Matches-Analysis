@@ -24,15 +24,15 @@ def fit_models(df: pd.DataFrame, *, fitted_results: dict | None = None) -> tuple
         ('gender_only', 'matches ~ C(gender)'),
         ('likes_and_activity', 'matches ~ C(gender) + log_likes_rate + log_opens_rate'),
         ('activity_interaction', 'matches ~ C(gender) * log_opens_rate + log_likes_rate'),
-        ('education_adjusted', 'matches ~ C(gender) + log_likes_rate + log_opens_rate + C(education_group)'),
-        ('employment_adjusted', 'matches ~ C(gender) + log_likes_rate + log_opens_rate + C(employment_group)'),
+        ('education', 'matches ~ C(gender) + log_likes_rate + log_opens_rate + C(education_group)'),
+        ('employment', 'matches ~ C(gender) + log_likes_rate + log_opens_rate + C(employment_group)'),
     ]
     output = []
     models = []
     for name, formula in specs:
         needed = ['matches', 'gender', 'recorded_days', 'log_likes_rate', 'log_opens_rate']
-        category = {'education_adjusted': 'education_group',
-                    'employment_adjusted': 'employment_group'}.get(name)
+        category = {'education': 'education_group',
+                    'employment': 'employment_group'}.get(name)
         if category:
             if category not in df or df[category].nunique() < 2:
                 models.append({'name': name, 'status': 'skipped', 'reason': f'need two observed {category} categories'})
