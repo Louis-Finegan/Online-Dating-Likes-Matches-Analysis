@@ -30,10 +30,11 @@ def mean_interval(design, beta, covariance):
     return np.exp(eta), np.exp(eta - 1.96 * se), np.exp(eta + 1.96 * se)
 
 
-def prediction_table(result, data):
+def prediction_table(result, data, *, reference_likes=None):
     """Use each fitted gender's observed opening range; pooled median likes."""
     terms = [term for term in result.params.index if term != 'alpha']
-    reference_likes = float(data.likes_per_recorded_day.median())
+    if reference_likes is None:
+        reference_likes = float(data.likes_per_recorded_day.median())
     rows = []
     category = next((c for c in ('education_group', 'employment_group')
                      if any(f'C({c})' in term for term in terms)), None)
@@ -80,7 +81,8 @@ def make_model_figures(coefficients, fitted_results, output):
               'likes_and_activity': 'Model 2: likes and activity',
               'activity_interaction': 'Model 3: activity interaction',
               'education': 'Model 4: education',
-              'employment': 'Model 5: employment'}
+              'employment': 'Model 5: employment',
+              'opens_likes_interaction': 'Model 6: opens x likes'}
     for name in fitted_results:
         table = coefficients.loc[(coefficients.model == name) &
                                  ~coefficients.term.isin(['Intercept', 'alpha'])].copy()
@@ -94,13 +96,19 @@ def make_model_figures(coefficients, fitted_results, output):
         ax.set_yticks(y, table.term)
         ax.invert_yaxis()
         ax.set(xlabel='Rate ratio, 95% Wald confidence interval', title=titles[name])
+        note = ('Opens/likes main effects are at zero of the other rate; interaction is a ratio of rate ratios.'
+                if name == 'opens_likes_interaction' else
+                'Gender-interaction model: gender contrast is at zero opens; interaction is a ratio of rate ratios.')
         fig.text(0.5, 0.01, 'Exploratory associations. Continuous terms: +1 in log(1 + rate).\n'
-                 'Interaction model: gender contrast is at zero opens; interaction is a ratio of rate ratios.',
+                 + note,
                  ha='center', fontsize=8)
         fig.tight_layout(rect=(0, 0.12, 1, 1))
         filename = f'06_coefficients_{name}'
         _save(directory, filename)
         figures.append(filename)
+    if 'opens_likes_interaction' in fitted_results:
+        result, data = fitted_results['opens_likes_interaction']
+        figures.append(make_opens_likes_figure(result, data, directory))
     curve_models = [n for n in ('likes_and_activity', 'activity_interaction', 'education', 'employment') if n in fitted_results]
     if not curve_models:
         return figures
@@ -122,7 +130,7 @@ def make_model_figures(coefficients, fitted_results, output):
             label = ' / '.join(map(str, key)) if isinstance(key, tuple) else str(key)
             line, = ax.plot(group.opens_per_recorded_day, group.expected_matches_per_recorded_day,
                             label=label, color='#1f77b4' if gender == 'Female' else '#ff7f0e',
-                            linestyle='--' if category and key[1] in ('educated', 'Employed') else '-')
+                            linestyle='--' if category and key[1] in ('Listed education', 'Employed (assumed)', 'educated', 'Employed') else '-')
             ax.fill_between(group.opens_per_recorded_day, group.ci95_low, group.ci95_high,
                             color=line.get_color(), alpha=0.2)
             mask = data.gender == gender
@@ -147,3 +155,48 @@ def make_model_figures(coefficients, fitted_results, output):
     _save(directory, filename)
     figures.append(filename)
     return figures
+
+
+def opens_likes_prediction_table(result, data):
+    """Common pooled liking quartiles permit like-for-like gender comparisons."""
+    tables = []
+    for quantile in (0.25, 0.5, 0.75):
+        reference = float(data.likes_per_recorded_day.quantile(quantile))
+        table = prediction_table(result, data, reference_likes=reference)
+        table.insert(0, 'likes_quantile', quantile)
+        table.insert(0, 'model', 'opens_likes_interaction')
+        tables.append(table)
+    return pd.concat(tables, ignore_index=True)
+
+
+def make_opens_likes_figure(result, data, directory):
+    """Model 6 alone: liking-rate scenarios, pointwise mean intervals, no gender interaction."""
+    table = opens_likes_prediction_table(result, data)
+    table.to_csv(directory / 'opens_likes_prediction_curves.csv', index=False)
+    genders = sorted(table.gender.unique())
+    fig, axes = plt.subplots(1, len(genders), figsize=(7 * len(genders), 5),
+                             squeeze=False, sharey=True)
+    for ax, gender in zip(axes[0], genders):
+        for quantile, group in table.loc[table.gender == gender].groupby('likes_quantile'):
+            reference = group.reference_likes_per_recorded_day.iloc[0]
+            line, = ax.plot(group.opens_per_recorded_day, group.expected_matches_per_recorded_day,
+                            label=f'Likes/day Q{int(quantile * 100)} = {reference:.2f}')
+            ax.fill_between(group.opens_per_recorded_day, group.ci95_low, group.ci95_high,
+                            color=line.get_color(), alpha=0.15)
+        observed = data.loc[data.gender == gender, 'opens_per_recorded_day']
+        ax.plot(observed, np.full(len(observed), 0.015), '|', color='0.4', alpha=0.15,
+                transform=ax.get_xaxis_transform())
+        ax.set_xscale('symlog', linthresh=1)
+        ax.set(title=str(gender), xlabel='App opens / recorded day (symlog scale)',
+               ylabel='Expected matches / recorded day')
+        ax.legend(fontsize=9)
+        ax.grid(alpha=0.15)
+    fig.suptitle('Model 6: opens x likes, additive gender')
+    fig.text(0.5, 0.01, 'Pointwise 95% confidence bands for the mean, not individual prediction intervals.\n'
+             'Likes/day fixed at pooled sample quartiles; curves stay within each gender’s opening range.\n'
+             'Rugs show opening rates only: some opens/likes combinations may have little joint support. Exploratory, not causal.',
+             ha='center', fontsize=9)
+    fig.tight_layout(rect=(0, 0.15, 1, 0.94))
+    name = '08_opens_likes_interaction'
+    _save(directory, name)
+    return name

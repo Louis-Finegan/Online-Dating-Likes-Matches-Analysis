@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-from dating_research.model_figures import mean_interval, prediction_table, make_model_figures
+from dating_research.model_figures import mean_interval, prediction_table, make_model_figures, opens_likes_prediction_table
 from dating_research.models import fit_models
 
 
@@ -29,8 +29,8 @@ def test_prediction_design_agrees_with_fitted_model(tmp_path):
     d['matches'] = rng.negative_binomial(2, 2 / (2 + mu))
     fitted = {}
     coefficients, diagnostics = fit_models(d, fitted_results=fitted)
-    assert len(fitted) == 3, diagnostics
-    for name in ('likes_and_activity', 'activity_interaction'):
+    assert len(fitted) == 4, diagnostics
+    for name in ('likes_and_activity', 'activity_interaction', 'opens_likes_interaction'):
         result, sample = fitted[name]
         table = prediction_table(result, sample)
         grid = pd.DataFrame({'gender': table.gender,
@@ -45,7 +45,24 @@ def test_prediction_design_agrees_with_fitted_model(tmp_path):
             assert np.isclose(group.opens_per_recorded_day.min(), observed.min())
             assert np.isclose(group.opens_per_recorded_day.max(), observed.max())
     figures = make_model_figures(coefficients, fitted, tmp_path)
-    assert len(figures) == 4
+    interaction, sample = fitted['opens_likes_interaction']
+    assert 'log_opens_rate:log_likes_rate' in interaction.params.index
+    assert not any('gender' in term and ':' in term for term in interaction.params.index)
+    diag = next(x for x in diagnostics if x['name'] == 'opens_likes_interaction')
+    lr = diag['opens_likes_interaction_likelihood_ratio_test']
+    assert lr['df'] == 1 and lr['n'] == n and 0 <= lr['p_value'] <= 1
+    scenarios = opens_likes_prediction_table(interaction, sample)
+    assert len(scenarios) == 900
+    assert set(scenarios.likes_quantile) == {0.25, 0.5, 0.75}
+    for q, group in scenarios.groupby('likes_quantile'):
+        np.testing.assert_allclose(group.reference_likes_per_recorded_day,
+                                   sample.likes_per_recorded_day.quantile(q))
+    grid = pd.DataFrame({'gender': scenarios.gender,
+        'log_opens_rate': np.log1p(scenarios.opens_per_recorded_day),
+        'log_likes_rate': np.log1p(scenarios.reference_likes_per_recorded_day)})
+    np.testing.assert_allclose(scenarios.expected_matches_per_recorded_day,
+                              interaction.predict(grid, offset=np.zeros(len(grid))))
+    assert len(figures) == 6
     assert all((tmp_path / f'{name}.{ext}').is_file() for name in figures for ext in ('png', 'pdf'))
 
 
@@ -55,8 +72,8 @@ def test_no_model_plots_for_skipped_fits(tmp_path):
 
 
 @pytest.mark.parametrize('category,name,levels', [
-    ('education_group', 'education_adjusted', ['No listed education', 'Listed education']),
-    ('employment_group', 'employment_adjusted', ['Unemployed (assumed)', 'Employed (assumed)']),
+    ('education_group', 'education', ['No listed education', 'Listed education']),
+    ('employment_group', 'employment', ['Unemployed (assumed)', 'Employed (assumed)']),
 ])
 def test_category_fit_tests_and_prediction_design(category, name, levels):
     rng = np.random.default_rng(82)

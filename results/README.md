@@ -15,7 +15,7 @@ Run `python -m scripts.run_study` from the repository root. Generated files in
 | `correlations_by_gender.json` | The same three associations within each recorded gender, with pairwise N, rho and p-value |
 | `models.csv` | Negative-binomial coefficients and rate ratios |
 | `model_diagnostics.json` | Model status, formula, sample size and fit diagnostics |
-| `figures/` | Five descriptive plots, up to five coefficient plots and one model-curve comparison, each in PNG and PDF format |
+| `figures/` | Five descriptive plots, up to six coefficient plots and one model-curve comparison, each in PNG and PDF format |
 | `figures/coefficients_<model>.csv` | Plotted rate ratios and 95% Wald intervals (intercept and dispersion omitted) |
 | `figures/model_prediction_curves.csv` | Plotted expected matches/recorded day, pointwise 95% mean confidence limits, and reference likes rate |
 
@@ -51,7 +51,7 @@ entries rather than verified calendar tenure.
 
 ## Education model (Model 4)
 
-`education_adjusted` adds `C(education_group)` to Model 2, with no interactions.
+`education` adds `C(education_group)` to Model 2, with no interactions.
 The two exact source strings map to `No listed education` (reference) and
 `Listed education`. They must not be interpreted as verified qualifications or
 absence of schooling; the original field's missingness/encoding is uncertain.
@@ -71,7 +71,7 @@ are fixed at the full fitted sample median. Sparse subgroups imply weak support.
 
 ## Profession proxy model (Model 5)
 
-`employment_adjusted` adds `C(employment_group)` to Model 2 **instead of
+`employment` adds `C(employment_group)` to Model 2 **instead of
 education**, with no interactions. Following the requested assumption, trimmed,
 case-insensitive `False` and `unknown` in `jobTitle` map to `Unemployed (assumed)`
 (reference); every other nonempty recorded value maps to `Employed (assumed)`.
@@ -87,3 +87,29 @@ missingness, and the rule. Prediction curves include `employment_group`, use
 subgroup-specific observed opening ranges, and hold likes at the pooled median.
 Dashed lines show the assumed-employed or education-listed categories; colors
 retain gender. All tests are exploratory and unadjusted for multiple comparisons.
+
+## Opens × likes interaction (Model 6)
+
+`opens_likes_interaction` fits
+`matches ~ C(gender) + log_opens_rate * log_likes_rate`, with the existing
+`log(recorded_days)` offset. Gender is additive: there is **no gender
+interaction**, education, or employment term. The interaction allows the
+opening-rate slope to vary with liking rate and vice versa. Correlation between
+predictors alone does not imply an interaction; shared rate denominators and
+confounding remain limitations.
+
+`models.csv` includes coefficient Wald tests and 95% rate-ratio intervals.
+The exponentiated interaction is a ratio of rate ratios. The opening main effect
+is conditional on zero likes/day; the likes main effect is conditional on zero
+opens/day. Diagnostics include a same-sample likelihood-ratio test against the
+additive Model 2 baseline (one added interaction coefficient). All tests are
+exploratory and unadjusted.
+
+`06_coefficients_opens_likes_interaction` and `08_opens_likes_interaction` are
+saved as PNG/PDF. Figure 8 shows opening-rate curves at pooled likes/day quartiles
+(Q25, Q50, Q75), with separate gender panels and pointwise 95% mean confidence
+bands calculated from the full coefficient covariance. Values are exported in
+`figures/opens_likes_prediction_curves.csv`, including exact reference likes,
+quantiles and confidence limits. Curves stay within each gender's observed
+opening range, but fixed likes/open combinations may have sparse joint support;
+rugs show opening rates only. Figure 7 retains Models 2–5 at median likes/day.

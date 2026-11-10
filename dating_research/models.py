@@ -9,7 +9,7 @@ import statsmodels.formula.api as smf
 
 
 def fit_models(df: pd.DataFrame, *, fitted_results: dict | None = None) -> tuple[pd.DataFrame, list[dict]]:
-    """Five negative-binomial models with a log(recorded_days) offset.
+    """Six negative-binomial models with a log(recorded_days) offset.
 
     Optionally populate fitted_results with supported fits and their plot data;
     the existing two-value return interface is preserved.
@@ -19,6 +19,7 @@ def fit_models(df: pd.DataFrame, *, fitted_results: dict | None = None) -> tuple
     whether the association of app opens with matches varies by gender.
     Model 4 adds categorical source-listed education to Model 2 (no interactions).
     Model 5 instead adds the requested assumed-employment proxy, without education.
+    Model 6 adds opens x likes, with additive gender and no other features.
     """
     specs = [
         ('gender_only', 'matches ~ C(gender)'),
@@ -26,6 +27,7 @@ def fit_models(df: pd.DataFrame, *, fitted_results: dict | None = None) -> tuple
         ('activity_interaction', 'matches ~ C(gender) * log_opens_rate + log_likes_rate'),
         ('education', 'matches ~ C(gender) + log_likes_rate + log_opens_rate + C(education_group)'),
         ('employment', 'matches ~ C(gender) + log_likes_rate + log_opens_rate + C(employment_group)'),
+        ('opens_likes_interaction', 'matches ~ C(gender) + log_opens_rate * log_likes_rate'),
     ]
     output = []
     models = []
@@ -61,7 +63,9 @@ def fit_models(df: pd.DataFrame, *, fitted_results: dict | None = None) -> tuple
                            'offset': 'log(recorded_days)',
                            'converged': converged, 'log_likelihood': float(result.llf),
                            'aic': float(result.aic)})
-            if category and converged and finite:
+            test_prefix = category.removesuffix('_group') if category else (
+                'opens_likes_interaction' if name == 'opens_likes_interaction' else None)
+            if test_prefix and converged and finite:
                 # Compare nested models on exactly the same complete-case sample.
                 reduced = smf.negativebinomial(
                     'matches ~ C(gender) + log_likes_rate + log_opens_rate',
@@ -70,8 +74,8 @@ def fit_models(df: pd.DataFrame, *, fitted_results: dict | None = None) -> tuple
                     statistic = float(2 * (result.llf - reduced.llf))
                     degrees = int(len(result.params) - len(reduced.params))
                     if statistic >= -1e-6 and degrees > 0:
-                        models[-1][category.removesuffix('_group') + '_likelihood_ratio_test'] = {
-                            'null': f'all {category} coefficients are zero',
+                        models[-1][test_prefix + '_likelihood_ratio_test'] = {
+                            'null': f'all {category} coefficients are zero' if category else 'opens x likes coefficient is zero',
                             'statistic': max(0., statistic), 'df': degrees,
                             'p_value': float(chi2.sf(max(0., statistic), degrees)),
                             'n': int(len(model_data)), 'reduced_log_likelihood': float(reduced.llf)}

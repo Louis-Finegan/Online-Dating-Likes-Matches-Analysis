@@ -82,7 +82,7 @@ def write_report(out: str | Path, audit, totals, groups, bootstrap, correlations
         n = m.get('n', 'n/a')
         lines.append(f'- **{m["name"]}**: {status}; observations={n}.')
     for m in models:
-        test = m.get('education_likelihood_ratio_test') or m.get('employment_likelihood_ratio_test')
+        test = m.get('education_likelihood_ratio_test') or m.get('employment_likelihood_ratio_test') or m.get('opens_likes_interaction_likelihood_ratio_test')
         if test:
             lines += ['', f'{m["name"]} addition, same-sample likelihood-ratio test:',
                       f'- Chi-square={test["statistic"]:.3f}; df={test["df"]}; p={test["p_value"]:.4g}; N={test["n"]}.',
@@ -109,6 +109,7 @@ def write_report(out: str | Path, audit, totals, groups, bootstrap, correlations
         '- `figures/07_model_match_rate_curves`: Models 2/3/4/5 expected matches per recorded day,',
         '  with pointwise 95% mean confidence bands, not individual prediction intervals.',
         '  Likes/day is held at the fitted sample pooled median; curves stay within each gender’s observed opening range.',
+        '- `figures/08_opens_likes_interaction`: Model 6 opening-rate curves at pooled liking quartiles, by gender.',
         '- Model figures are omitted for skipped, failed or unstable fits. Plotted values are exported as CSVs.', '',
         '## Reproducibility', '',
         '- Code: `python -m scripts.run_analysis` in this repository.',
